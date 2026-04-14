@@ -936,14 +936,10 @@ function renderStartOverlay() {
   `;
   renderLeaderboard('startLb', 5);
   document.getElementById('playBtn').addEventListener('click', () => {
-    try {
-      document.getElementById('playBtn').blur();
-      try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(ae) {}
-      initGame(1);
-      setState('playing');
-    } catch(err) {
-      alert('Error: ' + err.message + '\n' + err.stack);
-    }
+    document.getElementById('playBtn').blur();
+    try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(ae) {}
+    initGame(1);
+    setState('playing');
   });
 }
 
@@ -1100,20 +1096,18 @@ document.getElementById('scoreEl').textContent = '000000';
 document.getElementById('levelEl').textContent = 'LV01';
 updateLivesDisplay();
 
-// Fetch leaderboard and show start screen
-fetchLeaderboard(5).then(() => {
-  setState('start');
-});
-// Fallback if fetch fails
-setTimeout(() => {
-  if (state !== 'start') setState('start');
-}, 1000);
-
 acc = 0;
 lastTime = 0;
-state = 'start';
 balls = [];
 bricks = [];
+
+// Show start screen immediately (attaches click handler)
+setState('start');
+
+// Refresh leaderboard data in background
+fetchLeaderboard(5).then(() => {
+  if (state === 'start') renderStartOverlay();
+});
 powerups = [];
 lasers = [];
 
