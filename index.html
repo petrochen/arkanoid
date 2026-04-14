@@ -752,6 +752,12 @@ function applyPowerup(id) {
     return;
   }
   // Reset previous continuous effects
+  if (catchMode) {
+    // Release any caught balls before disabling catch
+    for (var bi = 0; bi < balls.length; bi++) {
+      if (balls[bi].caught) balls[bi].caught = false;
+    }
+  }
   catchMode = false;
   laserMode = false;
   if (padW === PAD_EXP && id !== 'E') padW = PAD_DEF;
