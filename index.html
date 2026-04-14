@@ -165,7 +165,7 @@
       <h1>ARKANOID</h1>
       <div class="lb-title">TOP SCORES</div>
       <div id="startLb"></div>
-      <button class="btn" id="playBtn" onclick="window._startGame()">PLAY</button>
+      <button class="btn" id="playBtn" >PLAY</button>
       <div id="kbHint2" style="font-size:5px;color:#555;margin-top:4px;">ARROWS/AD + SPACE</div>
     </div>
   </div>
@@ -939,7 +939,7 @@ function renderStartOverlay() {
     <h1>ARKANOID</h1>
     <div class="lb-title">TOP SCORES</div>
     <div id="startLb"></div>
-    <button class="btn" id="playBtn" onclick="window._startGame()">PLAY</button>
+    <button class="btn" id="playBtn" >PLAY</button>
     <div style="font-size:5px;color:#555;margin-top:4px;">ARROWS/AD + SPACE</div>
   `;
   renderLeaderboard('startLb', 5);
@@ -959,26 +959,19 @@ function renderGameoverOverlay() {
     <button class="btn" id="submitBtn">SUBMIT</button>
     <div class="lb-title">TOP SCORES</div>
     <div id="goLb"></div>
-    <button class="btn" id="restartBtn" style="margin-top:6px;" onclick="window._startGame()">PLAY AGAIN</button>
+    <button class="btn" id="restartBtn" style="margin-top:6px;" >PLAY AGAIN</button>
   `;
   renderLeaderboard('goLb', 10);
 
-  const nameInput = document.getElementById('nameInput');
-  nameInput.addEventListener('input', () => {
-    nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  });
-  nameInput.addEventListener('keydown', e => e.stopPropagation());
-
-  document.getElementById('submitBtn').addEventListener('click', async () => {
-    const name = (nameInput.value || 'PLAYER').toUpperCase().substring(0, 6);
-    savedPlayerName = name;
-    localStorage.setItem('ark_player', name);
-    await submitScore(name, score);
-    await fetchLeaderboard(10);
-    renderGameoverOverlay();
-  });
-
-  // restartBtn uses onclick="window._startGame()" — no addEventListener needed
+  // Input filter for nameInput (delegation doesn't work well for input events)
+  var nameInput = document.getElementById('nameInput');
+  if (nameInput) {
+    nameInput.addEventListener('input', function() {
+      this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    nameInput.addEventListener('keydown', function(e) { e.stopPropagation(); });
+  }
+  // submitBtn and restartBtn handled via event delegation on overlay
 }
 
 function renderLeaderboard(elId, limit) {
@@ -1099,12 +1092,31 @@ lastTime = 0;
 balls = [];
 bricks = [];
 
-// Global start function — called via onclick on PLAY button
-window._startGame = function() {
-  try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-  initGame(1);
-  setState('playing');
-};
+// Event delegation on overlay — catches clicks on any button inside
+document.getElementById('overlay').addEventListener('click', function(e) {
+  var target = e.target;
+  if (target.id === 'playBtn' || target.id === 'restartBtn') {
+    e.preventDefault();
+    target.blur();
+    try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(ae) {}
+    initGame(1);
+    setState('playing');
+  }
+  if (target.id === 'submitBtn') {
+    e.preventDefault();
+    var nameInput = document.getElementById('nameInput');
+    if (nameInput) {
+      var name = (nameInput.value || 'PLAYER').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+      savedPlayerName = name;
+      localStorage.setItem('ark_player', name);
+      submitScore(name, score).then(function() {
+        return fetchLeaderboard(10);
+      }).then(function() {
+        if (state === 'gameover') renderGameoverOverlay();
+      });
+    }
+  }
+});
 
 // Show start screen
 setState('start');
