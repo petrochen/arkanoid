@@ -1082,15 +1082,20 @@ function loop(ts) {
 
 // ─── Startup ──────────────────────────────────────────────────────────────────
 hiScore = parseInt(localStorage.getItem('ark_hiscore') || '0');
-document.getElementById('hiEl').textContent = String(hiScore).padStart(6, '0');
-document.getElementById('scoreEl').textContent = '000000';
-document.getElementById('levelEl').textContent = 'LV01';
-updateLivesDisplay();
-
+score = 0;
+lives = 3;
+level = 1;
 acc = 0;
 lastTime = 0;
 balls = [];
 bricks = [];
+powerups = [];
+lasers = [];
+
+document.getElementById('hiEl').textContent = String(hiScore).padStart(6, '0');
+document.getElementById('scoreEl').textContent = '000000';
+document.getElementById('levelEl').textContent = 'LV01';
+updateLivesDisplay();
 
 // Event delegation on overlay — catches clicks on any button inside
 document.getElementById('overlay').addEventListener('click', function(e) {
@@ -1125,8 +1130,6 @@ setState('start');
 fetchLeaderboard(5).then(() => {
   if (state === 'start') renderStartOverlay();
 });
-powerups = [];
-lasers = [];
 
 requestAnimationFrame(loop);
 </script>
