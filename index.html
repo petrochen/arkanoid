@@ -936,9 +936,14 @@ function renderStartOverlay() {
   `;
   renderLeaderboard('startLb', 5);
   document.getElementById('playBtn').addEventListener('click', () => {
-    document.getElementById('playBtn').blur();
-    initGame(1);
-    setState('playing');
+    try {
+      document.getElementById('playBtn').blur();
+      try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(ae) {}
+      initGame(1);
+      setState('playing');
+    } catch(err) {
+      alert('Error: ' + err.message + '\n' + err.stack);
+    }
   });
 }
 
