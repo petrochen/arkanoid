@@ -983,8 +983,8 @@ function renderLeaderboard(elId, limit) {
   }
   const top = leaderboardData.slice(0, limit);
   el.innerHTML = top.map((e, i) => `
-    <div class="lb-entry${e.name === savedPlayerName ? ' me' : ''}">
-      <span>${i + 1}. ${(e.name || '?').padEnd(6)}</span>
+    <div class="lb-entry${e.player === savedPlayerName ? ' me' : ''}">
+      <span>${i + 1}. ${(e.player || '?').padEnd(6)}</span>
       <span>${String(e.score).padStart(6, '0')}</span>
     </div>
   `).join('');
