@@ -165,7 +165,7 @@
       <h1>ARKANOID</h1>
       <div class="lb-title">TOP SCORES</div>
       <div id="startLb"></div>
-      <button class="btn" id="playBtn">PLAY</button>
+      <button class="btn" id="playBtn" onclick="window._startGame()">PLAY</button>
       <div id="kbHint2" style="font-size:5px;color:#555;margin-top:4px;">ARROWS/AD + SPACE</div>
     </div>
   </div>
@@ -931,16 +931,10 @@ function renderStartOverlay() {
     <h1>ARKANOID</h1>
     <div class="lb-title">TOP SCORES</div>
     <div id="startLb"></div>
-    <button class="btn" id="playBtn">PLAY</button>
+    <button class="btn" id="playBtn" onclick="window._startGame()">PLAY</button>
     <div style="font-size:5px;color:#555;margin-top:4px;">ARROWS/AD + SPACE</div>
   `;
   renderLeaderboard('startLb', 5);
-  document.getElementById('playBtn').addEventListener('click', () => {
-    document.getElementById('playBtn').blur();
-    try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(ae) {}
-    initGame(1);
-    setState('playing');
-  });
 }
 
 function renderGameoverOverlay() {
@@ -957,7 +951,7 @@ function renderGameoverOverlay() {
     <button class="btn" id="submitBtn">SUBMIT</button>
     <div class="lb-title">TOP SCORES</div>
     <div id="goLb"></div>
-    <button class="btn" id="restartBtn" style="margin-top:6px;">PLAY AGAIN</button>
+    <button class="btn" id="restartBtn" style="margin-top:6px;" onclick="window._startGame()">PLAY AGAIN</button>
   `;
   renderLeaderboard('goLb', 10);
 
@@ -976,11 +970,7 @@ function renderGameoverOverlay() {
     renderGameoverOverlay();
   });
 
-  document.getElementById('restartBtn').addEventListener('click', () => {
-    document.getElementById('restartBtn').blur();
-    initGame(1);
-    setState('playing');
-  });
+  // restartBtn uses onclick="window._startGame()" — no addEventListener needed
 }
 
 function renderLeaderboard(elId, limit) {
@@ -1101,7 +1091,14 @@ lastTime = 0;
 balls = [];
 bricks = [];
 
-// Show start screen immediately (attaches click handler)
+// Global start function — called via onclick on PLAY button
+window._startGame = function() {
+  try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  initGame(1);
+  setState('playing');
+};
+
+// Show start screen
 setState('start');
 
 // Refresh leaderboard data in background
