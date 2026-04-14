@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ARKANOID</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100dvh;
+    font-family: 'Press Start 2P', monospace;
+    overflow: hidden;
+  }
+  #container {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100dvh;
+  }
+  #scoreBar {
+    width: 224px;
+    display: flex;
+    justify-content: space-between;
+    color: #fff;
+    font-size: 6px;
+    padding: 2px 0;
+    flex-shrink: 0;
+  }
+  #scoreBar span { min-width: 48px; text-align: center; }
+  #canvasWrap {
+    position: relative;
+    width: 224px;
+    flex-shrink: 0;
+  }
+  canvas {
+    display: block;
+    image-rendering: pixelated;
+    width: 224px;
+    height: 288px;
+    border-left: 4px solid #888;
+    border-right: 4px solid #888;
+    border-top: 4px solid #888;
+    background: #000;
+  }
+  #overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    z-index: 10;
+    padding: 8px;
+  }
+  #overlay h1 { font-size: 14px; color: #FC1C1C; margin-bottom: 8px; text-shadow: 0 0 8px #FC1C1C; }
+  #overlay h2 { font-size: 10px; color: #FC7460; margin-bottom: 6px; }
+  #overlay .btn {
+    background: #FC1C1C;
+    color: #fff;
+    border: none;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 6px 12px;
+    cursor: pointer;
+    margin: 6px 0;
+    outline: none;
+  }
+  #overlay .btn:hover { background: #ff4444; }
+  #overlay .score-big { font-size: 10px; color: #FCE404; margin: 4px 0; }
+  .lb-title { font-size: 7px; color: #3CBCFC; margin: 6px 0 3px; }
+  .lb-entry { font-size: 6px; color: #ccc; margin: 1px 0; display: flex; justify-content: space-between; width: 160px; }
+  .lb-entry.me { color: #FCE404; }
+  #nameWrap { margin: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  #nameWrap label { font-size: 6px; color: #aaa; }
+  #nameInput {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    background: #111;
+    color: #FCE404;
+    border: 1px solid #FCE404;
+    padding: 3px 6px;
+    width: 80px;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+  }
+  #livesBar {
+    width: 224px;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #livesLabel { font-size: 5px; color: #aaa; }
+  .lifeIcon { width: 16px; height: 4px; background: #C0C0C0; display: inline-block; }
+  #dpad {
+    width: 224px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    flex-shrink: 0;
+    flex-grow: 1;
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+  .dpad-btn {
+    background: #222;
+    color: #fff;
+    border: 1px solid #555;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+    border-radius: 4px;
+    min-width: 60px;
+    text-align: center;
+  }
+  .dpad-btn:active { background: #444; }
+  #fireBtn {
+    background: #FC1C1C;
+    border-color: #ff4444;
+    font-size: 6px;
+    padding: 6px 10px;
+  }
+  #kbHint { font-size: 5px; color: #555; text-align: center; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="scoreBar">
+    <span id="scoreEl">000000</span>
+    <span id="hiEl">000000</span>
+    <span id="levelEl">LV01</span>
+  </div>
+  <div id="canvasWrap">
+    <canvas id="c" width="224" height="288"></canvas>
+    <div id="overlay">
+      <h1>ARKANOID</h1>
+      <div class="lb-title">TOP SCORES</div>
+      <div id="startLb"></div>
+      <button class="btn" id="playBtn">PLAY</button>
+      <div id="kbHint2" style="font-size:5px;color:#555;margin-top:4px;">ARROWS/AD + SPACE</div>
+    </div>
+  </div>
+  <div id="livesBar">
+    <span id="livesLabel">LIVES</span>
+    <span id="livesIcons"></span>
+  </div>
+  <div id="dpad">
+    <button class="dpad-btn" id="leftBtn">◀ LEFT</button>
+    <button class="dpad-btn" id="fireBtn">FIRE</button>
+    <button class="dpad-btn" id="rightBtn">RIGHT ▶</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const W = 224, H = 288;
+const WALL_L = 4, WALL_R = W - 4;
+const BRICK_COLS = 11, BRICK_W = 18, BRICK_H = 8, BRICK_GAP = 2;
+const BRICK_STARTX = 3, BRICK_STARTY = 40;
+const PAD_Y = 270, PAD_H = 6, PAD_DEF = 32, PAD_EXP = 48;
+const PAD_SPEED = 3;
+const BALL_SZ = 4;
+const STEP = 1000 / 60;
+const GAME_ID = 'arkanoid';
+const API = 'https://arcade-api.petrochenko.info';
+
+// ─── Brick types ──────────────────────────────────────────────────────────────
+const BRICK_TYPES = {
+  '.': null,
+  'w': { color: '#FCFCFC', hits: 1, pts: 50 },
+  'o': { color: '#FC7460', hits: 1, pts: 60 },
+  'c': { color: '#3CBCFC', hits: 1, pts: 70 },
+  'g': { color: '#80D010', hits: 1, pts: 80 },
+  'r': { color: '#FC1C1C', hits: 1, pts: 90 },
+  'b': { color: '#0070EC', hits: 1, pts: 100 },
+  'p': { color: '#FC74FC', hits: 1, pts: 110 },
+  'y': { color: '#FCE404', hits: 1, pts: 120 },
+  's': { color: '#BCBCBC', hits: 2, pts: 150 },
+  'G': { color: '#FFD700', hits: Infinity, pts: 0 },
+};
+
+// ─── Levels ───────────────────────────────────────────────────────────────────
+const LEVELS = [
+  // 1
+  [
+    '...........',
+    '...........',
+    'ooooooooooo',
+    'ccccccccccc',
+    'ggggggggggg',
+    'rrrrrrrrrrr',
+    'bbbbbbbbbbb',
+    'ppppppppppp',
+  ],
+  // 2 pyramid
+  [
+    '.....w.....',
+    '....www....',
+    '...wwwww...',
+    '..ooooooo..',
+    '.ccccccccc.',
+    'ggggggggggg',
+  ],
+  // 3 walls
+  [
+    'G.G.G.G.G.G',
+    'g.g.g.g.g.g',
+    'g.g.g.g.g.g',
+    'g.g.g.g.g.g',
+    'o.o.o.o.o.o',
+  ],
+  // 4 checkerboard
+  [
+    'r.r.r.r.r.r',
+    '.b.b.b.b.b.',
+    'r.r.r.r.r.r',
+    '.b.b.b.b.b.',
+    'r.r.r.r.r.r',
+  ],
+  // 5 diamond
+  [
+    '.....s.....',
+    '....srs....',
+    '...srcrs...',
+    '..srcrrcrs.',
+    '...srcrs...',
+    '....srs....',
+    '.....s.....',
+  ],
+  // 6 cross with silver/gold
+  [
+    'G....s....G',
+    '.G...s...G.',
+    '..GsssssG..',
+    'sssssssssss',
+    '..GsssssG..',
+    '.G...s...G.',
+    'G....s....G',
+  ],
+  // 7 fortress
+  [
+    'GGGGsGGGGGG',
+    'G.........G',
+    'G.rrrrrrr.G',
+    'G.r.....r.G',
+    'G.r.ppp.r.G',
+    'G.r.....r.G',
+    'G.rrrrrrr.G',
+    'G.........G',
+    'GGGGsGGGGGG',
+  ],
+  // 8 zigzag
+  [
+    'y...........',
+    '.yy.........',
+    '..yyy.......',
+    '...yyyy.....',
+    '....yyyyy...',
+    '.....yyyyyy.',
+    'ssssssssss..',
+    'GGGGGGGGGs..',
+  ],
+  // 9 dense with silver
+  [
+    'ssssssssss.',
+    'sGsGsGsGss',
+    'sssssssssss',
+    'rrrrrrrrrrr',
+    'GrGrGrGrGrG',
+    'rrrrrrrrrrr',
+    'ppppppppppp',
+    'GpGpGpGpGpG',
+  ],
+  // 10 boss level
+  [
+    'GGGGGGGGGGg',
+    'GssssssssGg',
+    'GsGGGGGGsGg',
+    'GsGrrrrGsGg',
+    'GsGrGGrGsGg',
+    'GsGrrrrGsGg',
+    'GsGGGGGGsGg',
+    'GssssssssGg',
+    'GGGGGGGGGGg',
+    'yyyyyyyyyyy',
+  ],
+];
+
+// ─── Power-up types ───────────────────────────────────────────────────────────
+const POWERUPS = [
+  { id: 'S', color: '#FC7460', label: 'S' },
+  { id: 'C', color: '#00BC00', label: 'C' },
+  { id: 'E', color: '#3CBCFC', label: 'E' },
+  { id: 'D', color: '#FCFCFC', label: 'D' },
+  { id: 'L', color: '#FC1C1C', label: 'L' },
+  { id: 'B', color: '#FC74FC', label: 'B' },
+  { id: 'P', color: '#BCBCBC', label: 'P' },
+];
+
+// ─── Audio ────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq, type, duration, vol = 0.3, freqEnd = null) {
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ac.currentTime);
+    if (freqEnd !== null) osc.frequency.exponentialRampToValueAtTime(freqEnd, ac.currentTime + duration / 1000);
+    gain.gain.setValueAtTime(vol, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration / 1000);
+    osc.start(ac.currentTime);
+    osc.stop(ac.currentTime + duration / 1000);
+  } catch(e) {}
+}
+function sfxPaddle() { playTone(440, 'square', 50); }
+function sfxBrick(pts) { playTone(440 + pts * 2, 'square', 40); }
+function sfxWall() { playTone(220, 'square', 30, 0.2); }
+function sfxPowerup() {
+  [523, 659, 784].forEach((f, i) => setTimeout(() => playTone(f, 'square', 80), i * 80));
+}
+function sfxLoseBall() { playTone(400, 'square', 500, 0.3, 80); }
+function sfxLevelComplete() {
+  [523, 587, 659, 698, 784].forEach((f, i) => setTimeout(() => playTone(f, 'square', 120), i * 100));
+}
+function sfxLaser() {
+  try {
+    const ac = getAudio();
+    const buf = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    const src = ac.createBufferSource();
+    const gain = ac.createGain();
+    src.buffer = buf;
+    src.connect(gain);
+    gain.connect(ac.destination);
+    gain.gain.setValueAtTime(0.2, ac.currentTime);
+    src.start();
+  } catch(e) {}
+}
+
+// ─── Game state ───────────────────────────────────────────────────────────────
+let state, score, hiScore, lives, level, balls, bricks, padX, padW;
+let powerupOnScreen, powerups, lasers, catchMode, laserMode, multiball;
+let stateTimer, gameToken, currentPowerup;
+let lastTime, acc;
+
+// Input state
+const keys = { left: false, right: false, fire: false };
+let firePressed = false;
+
+// Canvas
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+let savedPlayerName = localStorage.getItem('ark_player') || '';
+let leaderboardData = [];
+
+async function fetchLeaderboard(limit = 10) {
+  try {
+    const r = await fetch(`${API}/scores/${GAME_ID}?limit=${limit}`);
+    if (r.ok) leaderboardData = await r.json();
+  } catch(e) {}
+}
+
+async function submitScore(name, sc) {
+  try {
+    await fetch(`${API}/scores`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game: GAME_ID, name, score: sc, token: gameToken })
+    });
+  } catch(e) {}
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+function initGame(lvl = 1) {
+  score = 0;
+  lives = 3;
+  level = lvl;
+  gameToken = Date.now();
+  currentPowerup = null;
+  initLevel();
+}
+
+function initLevel() {
+  padX = (W - PAD_DEF) / 2;
+  padW = PAD_DEF;
+  catchMode = false;
+  laserMode = false;
+  multiball = false;
+  powerupOnScreen = null;
+  powerups = [];
+  lasers = [];
+  currentPowerup = null;
+
+  // Build bricks
+  const layout = LEVELS[(level - 1) % LEVELS.length];
+  bricks = [];
+  for (let row = 0; row < layout.length; row++) {
+    const line = layout[row];
+    for (let col = 0; col < BRICK_COLS; col++) {
+      const ch = col < line.length ? line[col] : '.';
+      const type = BRICK_TYPES[ch];
+      if (!type) continue;
+      bricks.push({
+        x: BRICK_STARTX + col * (BRICK_W + BRICK_GAP),
+        y: BRICK_STARTY + row * (BRICK_H + BRICK_GAP),
+        w: BRICK_W,
+        h: BRICK_H,
+        color: type.color,
+        hits: type.hits,
+        maxHits: type.hits,
+        pts: type.pts,
+        gold: type.hits === Infinity,
+      });
+    }
+  }
+
+  spawnBall();
+}
+
+function spawnBall() {
+  const speed = Math.min(2.5 + (level - 1) * 0.1, 4.5);
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  const angle = (60 + Math.random() * 20) * Math.PI / 180;
+  balls = [{
+    x: padX + padW / 2 - BALL_SZ / 2,
+    y: PAD_Y - BALL_SZ - 1,
+    vx: speed * Math.cos(angle) * sign,
+    vy: -speed * Math.sin(angle),
+    stuck: true,
+    stuckOff: 0,
+    speed,
+  }];
+}
+
+// ─── Collision helpers ────────────────────────────────────────────────────────
+function rectOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function ballBrickCollide(ball, brick) {
+  // CCD: check along path
+  const steps = Math.ceil(Math.max(Math.abs(ball.vx), Math.abs(ball.vy)) / 2) + 1;
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps;
+    const bx2 = ball.x + ball.vx * t;
+    const by2 = ball.y + ball.vy * t;
+    if (rectOverlap(bx2, by2, BALL_SZ, BALL_SZ, brick.x, brick.y, brick.w, brick.h)) {
+      // Determine face by overlap amounts
+      const prevX = ball.x + ball.vx * (s - 1) / steps;
+      const prevY = ball.y + ball.vy * (s - 1) / steps;
+      const overlapLeft = (prevX + BALL_SZ) - brick.x;
+      const overlapRight = (brick.x + brick.w) - prevX;
+      const overlapTop = (prevY + BALL_SZ) - brick.y;
+      const overlapBottom = (brick.y + brick.h) - prevY;
+      const minX = Math.min(overlapLeft, overlapRight);
+      const minY = Math.min(overlapTop, overlapBottom);
+      return minX < minY ? 'x' : 'y';
+    }
+  }
+  return null;
+}
+
+// ─── Update ───────────────────────────────────────────────────────────────────
+function update() {
+  if (state === 'paused') return;
+
+  if (state === 'dead') {
+    stateTimer--;
+    if (stateTimer <= 0) {
+      if (lives <= 0) {
+        setState('gameover');
+      } else {
+        spawnBall();
+        setState('playing');
+      }
+    }
+    return;
+  }
+
+  if (state === 'levelcomplete') {
+    stateTimer--;
+    if (stateTimer <= 0) {
+      level++;
+      initLevel();
+      setState('playing');
+    }
+    return;
+  }
+
+  if (state !== 'playing') return;
+
+  // Paddle movement
+  if (keys.left) padX = Math.max(WALL_L, padX - PAD_SPEED);
+  if (keys.right) padX = Math.min(WALL_R - padW, padX + PAD_SPEED);
+
+  // Fire / launch
+  if (firePressed) {
+    firePressed = false;
+    // Launch stuck balls
+    let launched = false;
+    for (const ball of balls) {
+      if (ball.stuck) {
+        ball.stuck = false;
+        launched = true;
+      }
+    }
+    // Catch mode release
+    if (!launched && catchMode) {
+      for (const ball of balls) {
+        if (ball.caught) {
+          ball.caught = false;
+        }
+      }
+    }
+    // Laser fire
+    if (laserMode && !launched) {
+      fireLaser();
+    }
+  }
+
+  // Move balls
+  const deadBalls = [];
+  for (const ball of balls) {
+    if (ball.stuck) {
+      ball.x = padX + padW / 2 - BALL_SZ / 2 + ball.stuckOff;
+      ball.y = PAD_Y - BALL_SZ - 1;
+      continue;
+    }
+    if (ball.caught) {
+      ball.x = padX + padW / 2 - BALL_SZ / 2 + ball.stuckOff;
+      ball.y = PAD_Y - BALL_SZ - 1;
+      continue;
+    }
+
+    // Prevent nearly horizontal bouncing
+    if (Math.abs(ball.vy) < 0.5) {
+      ball.vy = ball.vy < 0 ? -0.5 : 0.5;
+    }
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // Wall collisions
+    if (ball.x <= WALL_L) {
+      ball.x = WALL_L;
+      ball.vx = Math.abs(ball.vx);
+      sfxWall();
+    }
+    if (ball.x + BALL_SZ >= WALL_R) {
+      ball.x = WALL_R - BALL_SZ;
+      ball.vx = -Math.abs(ball.vx);
+      sfxWall();
+    }
+    if (ball.y <= 4) {
+      ball.y = 4;
+      ball.vy = Math.abs(ball.vy);
+      sfxWall();
+    }
+
+    // Paddle collision
+    if (
+      ball.vy > 0 &&
+      ball.x + BALL_SZ >= padX && ball.x <= padX + padW &&
+      ball.y + BALL_SZ >= PAD_Y && ball.y <= PAD_Y + PAD_H
+    ) {
+      const halfPad = padW / 2;
+      const hitOffset = (ball.x + BALL_SZ / 2) - (padX + halfPad);
+      const rel = Math.abs(hitOffset) / halfPad; // 0 = center, 1 = edge
+      const angle = (30 + (85 - 30) * (1 - rel)) * Math.PI / 180;
+      const spd = ball.speed;
+      ball.vx = spd * Math.cos(angle) * (hitOffset < 0 ? -1 : 1);
+      ball.vy = -spd * Math.sin(angle);
+      ball.y = PAD_Y - BALL_SZ;
+      sfxPaddle();
+
+      if (catchMode) {
+        ball.caught = true;
+        ball.stuckOff = hitOffset;
+        // End laser mode when ball hits paddle
+        laserMode = false;
+      }
+    }
+
+    // Ball lost
+    if (ball.y > H + 10) {
+      deadBalls.push(ball);
+    }
+
+    // Brick collisions
+    for (const brick of bricks) {
+      if (brick.destroyed) continue;
+      const face = ballBrickCollide(ball, brick);
+      if (face) {
+        if (!brick.gold) {
+          brick.hits--;
+          if (brick.hits <= 0) {
+            brick.destroyed = true;
+            score += brick.pts;
+            updateScoreDisplay();
+            // Power-up spawn
+            if (!multiball && powerups.length === 0 && Math.random() < 0.2) {
+              const pu = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+              powerups.push({
+                x: brick.x + brick.w / 2 - 8,
+                y: brick.y + brick.h,
+                type: pu,
+                w: 16, h: 8
+              });
+            }
+          }
+        }
+        sfxBrick(brick.pts);
+        if (face === 'x') ball.vx = -ball.vx;
+        else ball.vy = -ball.vy;
+        break;
+      }
+    }
+  }
+
+  // Remove dead balls
+  for (const b of deadBalls) balls.splice(balls.indexOf(b), 1);
+  if (balls.length === 0) {
+    sfxLoseBall();
+    lives--;
+    updateLivesDisplay();
+    setState('dead');
+    stateTimer = 60;
+    return;
+  }
+
+  // Clean destroyed bricks
+  bricks = bricks.filter(b => !b.destroyed);
+
+  // Check level complete
+  const destructible = bricks.filter(b => !b.gold);
+  if (destructible.length === 0) {
+    sfxLevelComplete();
+    setState('levelcomplete');
+    stateTimer = 90;
+    return;
+  }
+
+  // Move power-ups
+  for (const pu of powerups) {
+    pu.y += 1.5;
+    // Check paddle collision
+    if (
+      pu.y + pu.h >= PAD_Y && pu.y <= PAD_Y + PAD_H &&
+      pu.x + pu.w >= padX && pu.x <= padX + padW
+    ) {
+      applyPowerup(pu.type.id);
+      pu.collected = true;
+    }
+  }
+  powerups = powerups.filter(p => !p.collected && p.y < H + 10);
+
+  // Move lasers
+  for (const laser of lasers) {
+    laser.y -= 6;
+    // Check brick collision
+    for (const brick of bricks) {
+      if (brick.destroyed) continue;
+      if (rectOverlap(laser.x, laser.y, 2, 6, brick.x, brick.y, brick.w, brick.h)) {
+        if (!brick.gold) {
+          brick.hits--;
+          if (brick.hits <= 0) {
+            brick.destroyed = true;
+            score += brick.pts;
+            updateScoreDisplay();
+          }
+        }
+        laser.dead = true;
+        break;
+      }
+    }
+    if (laser.y < 4) laser.dead = true;
+  }
+  lasers = lasers.filter(l => !l.dead);
+  bricks = bricks.filter(b => !b.destroyed);
+
+  // Recheck level complete after laser
+  const destructible2 = bricks.filter(b => !b.gold);
+  if (destructible2.length === 0) {
+    sfxLevelComplete();
+    setState('levelcomplete');
+    stateTimer = 90;
+    return;
+  }
+}
+
+function applyPowerup(id) {
+  sfxPowerup();
+  if (id === 'P') {
+    lives++;
+    updateLivesDisplay();
+    return;
+  }
+  if (id === 'B') {
+    sfxLevelComplete();
+    level++;
+    initLevel();
+    setState('playing');
+    return;
+  }
+  // Reset previous continuous effects
+  catchMode = false;
+  laserMode = false;
+  if (padW === PAD_EXP && id !== 'E') padW = PAD_DEF;
+
+  currentPowerup = id;
+  switch(id) {
+    case 'S':
+      for (const b of balls) {
+        const sign = b.vx < 0 ? -1 : 1;
+        b.speed = 1.5;
+        const angle = Math.atan2(-b.vy, Math.abs(b.vx));
+        b.vx = 1.5 * Math.cos(angle) * sign;
+        b.vy = -1.5 * Math.sin(angle);
+      }
+      break;
+    case 'C':
+      catchMode = true;
+      break;
+    case 'E':
+      padW = PAD_EXP;
+      padX = Math.min(WALL_R - padW, padX);
+      break;
+    case 'D':
+      if (balls.length === 1) {
+        multiball = true;
+        const orig = balls[0];
+        const spd = orig.speed;
+        for (let i = -1; i <= 1; i++) {
+          if (i === 0) continue;
+          const angle = Math.atan2(-orig.vy, orig.vx) + i * (Math.PI / 8);
+          balls.push({
+            x: orig.x, y: orig.y,
+            vx: spd * Math.cos(angle),
+            vy: -Math.abs(spd * Math.sin(angle)),
+            stuck: false, caught: false, stuckOff: 0,
+            speed: spd
+          });
+        }
+      }
+      break;
+    case 'L':
+      laserMode = true;
+      break;
+  }
+}
+
+function fireLaser() {
+  if (lasers.length >= 4) return;
+  sfxLaser();
+  lasers.push({ x: padX + 2, y: PAD_Y - 6 });
+  lasers.push({ x: padX + padW - 4, y: PAD_Y - 6 });
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // Walls (visual decoration)
+  ctx.fillStyle = '#444';
+  ctx.fillRect(0, 0, WALL_L, H);
+  ctx.fillRect(WALL_R, 0, W - WALL_R, H);
+  ctx.fillRect(0, 0, W, 4);
+
+  // Bricks
+  for (const brick of bricks) {
+    if (brick.destroyed) continue;
+    ctx.fillStyle = brick.color;
+    // Dimmer if damaged silver
+    if (!brick.gold && brick.maxHits > 1 && brick.hits < brick.maxHits) {
+      ctx.globalAlpha = 0.6;
+    }
+    ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
+    ctx.globalAlpha = 1;
+    // Highlight edge
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(brick.x, brick.y, brick.w, 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(brick.x, brick.y + brick.h - 2, brick.w, 2);
+  }
+
+  // Power-ups
+  for (const pu of powerups) {
+    ctx.fillStyle = pu.type.color;
+    ctx.fillRect(pu.x, pu.y, pu.w, pu.h);
+    ctx.fillStyle = '#000';
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(pu.type.label, pu.x + pu.w / 2, pu.y + 7);
+  }
+
+  // Lasers
+  ctx.fillStyle = '#FC1C1C';
+  for (const laser of lasers) {
+    ctx.fillRect(laser.x, laser.y, 2, 6);
+  }
+
+  // Paddle
+  ctx.fillStyle = laserMode ? '#FC7460' : '#C0C0C0';
+  ctx.fillRect(padX, PAD_Y, padW, PAD_H);
+  if (laserMode) {
+    ctx.fillStyle = '#FC1C1C';
+    ctx.fillRect(padX, PAD_Y, 3, PAD_H);
+    ctx.fillRect(padX + padW - 3, PAD_Y, 3, PAD_H);
+  }
+  // Paddle shine
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillRect(padX + 1, PAD_Y, padW - 2, 2);
+
+  // Balls
+  ctx.fillStyle = '#fff';
+  for (const ball of balls) {
+    ctx.fillRect(ball.x, ball.y, BALL_SZ, BALL_SZ);
+  }
+
+  // State overlays (in-canvas)
+  if (state === 'levelcomplete') {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#FCE404';
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('LEVEL CLEAR!', W / 2, H / 2);
+  }
+  if (state === 'paused') {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PAUSED', W / 2, H / 2);
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillText('P / ESC TO RESUME', W / 2, H / 2 + 16);
+  }
+  if (state === 'dead') {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#FC1C1C';
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BALL LOST', W / 2, H / 2);
+  }
+
+  // Active power-up indicator
+  if (currentPowerup && state === 'playing') {
+    ctx.font = '5px "Press Start 2P", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('PWR:' + currentPowerup, WALL_L + 2, 12);
+  }
+}
+
+// ─── State management ─────────────────────────────────────────────────────────
+function setState(s) {
+  state = s;
+  const overlay = document.getElementById('overlay');
+  if (s === 'start') {
+    overlay.style.display = 'flex';
+    renderStartOverlay();
+  } else if (s === 'gameover') {
+    // Update hi score
+    if (score > hiScore) {
+      hiScore = score;
+      localStorage.setItem('ark_hiscore', hiScore);
+      document.getElementById('hiEl').textContent = String(hiScore).padStart(6, '0');
+    }
+    overlay.style.display = 'flex';
+    renderGameoverOverlay();
+    // Submit score
+    fetchLeaderboard(10).then(() => renderGameoverOverlay());
+    if (savedPlayerName) {
+      submitScore(savedPlayerName, score).then(() => fetchLeaderboard(10).then(() => renderGameoverOverlay()));
+    }
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+function renderStartOverlay() {
+  const overlay = document.getElementById('overlay');
+  overlay.innerHTML = `
+    <h1>ARKANOID</h1>
+    <div class="lb-title">TOP SCORES</div>
+    <div id="startLb"></div>
+    <button class="btn" id="playBtn">PLAY</button>
+    <div style="font-size:5px;color:#555;margin-top:4px;">ARROWS/AD + SPACE</div>
+  `;
+  renderLeaderboard('startLb', 5);
+  document.getElementById('playBtn').addEventListener('click', () => {
+    document.getElementById('playBtn').blur();
+    initGame(1);
+    setState('playing');
+  });
+}
+
+function renderGameoverOverlay() {
+  const overlay = document.getElementById('overlay');
+  const hi = score > hiScore ? '<span style="color:#FCE404;font-size:6px;">NEW HI-SCORE!</span>' : '';
+  overlay.innerHTML = `
+    <h2>GAME OVER</h2>
+    <div class="score-big">${String(score).padStart(6, '0')}</div>
+    ${hi}
+    <div id="nameWrap" style="margin:4px 0;display:flex;flex-direction:column;align-items:center;gap:3px;">
+      <label style="font-size:5px;color:#aaa;">YOUR NAME</label>
+      <input id="nameInput" maxlength="6" value="${savedPlayerName}" placeholder="PLAYER" style="font-family:'Press Start 2P',monospace;font-size:9px;background:#111;color:#FCE404;border:1px solid #FCE404;padding:3px 6px;width:80px;text-align:center;text-transform:uppercase;outline:none;">
+    </div>
+    <button class="btn" id="submitBtn">SUBMIT</button>
+    <div class="lb-title">TOP SCORES</div>
+    <div id="goLb"></div>
+    <button class="btn" id="restartBtn" style="margin-top:6px;">PLAY AGAIN</button>
+  `;
+  renderLeaderboard('goLb', 10);
+
+  const nameInput = document.getElementById('nameInput');
+  nameInput.addEventListener('input', () => {
+    nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  });
+  nameInput.addEventListener('keydown', e => e.stopPropagation());
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const name = (nameInput.value || 'PLAYER').toUpperCase().substring(0, 6);
+    savedPlayerName = name;
+    localStorage.setItem('ark_player', name);
+    await submitScore(name, score);
+    await fetchLeaderboard(10);
+    renderGameoverOverlay();
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    document.getElementById('restartBtn').blur();
+    initGame(1);
+    setState('playing');
+  });
+}
+
+function renderLeaderboard(elId, limit) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!leaderboardData.length) {
+    el.innerHTML = '<div style="font-size:6px;color:#555;">NO SCORES YET</div>';
+    return;
+  }
+  const top = leaderboardData.slice(0, limit);
+  el.innerHTML = top.map((e, i) => `
+    <div class="lb-entry${e.name === savedPlayerName ? ' me' : ''}">
+      <span>${i + 1}. ${(e.name || '?').padEnd(6)}</span>
+      <span>${String(e.score).padStart(6, '0')}</span>
+    </div>
+  `).join('');
+}
+
+// ─── UI updates ───────────────────────────────────────────────────────────────
+function updateScoreDisplay() {
+  document.getElementById('scoreEl').textContent = String(score).padStart(6, '0');
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('ark_hiscore', hiScore);
+    document.getElementById('hiEl').textContent = String(hiScore).padStart(6, '0');
+  }
+}
+
+function updateLivesDisplay() {
+  document.getElementById('livesIcons').innerHTML =
+    Array(Math.max(0, lives)).fill('<span class="lifeIcon"></span>').join('');
+}
+
+function updateLevelDisplay() {
+  document.getElementById('levelEl').textContent = 'LV' + String(level).padStart(2, '0');
+}
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const active = document.activeElement;
+  if (active && active.tagName === 'INPUT') return;
+
+  switch(e.code) {
+    case 'ArrowLeft': case 'KeyA': keys.left = true; break;
+    case 'ArrowRight': case 'KeyD': keys.right = true; break;
+    case 'Space':
+      e.preventDefault();
+      if (state === 'playing') firePressed = true;
+      break;
+    case 'KeyP': case 'Escape':
+      if (state === 'playing') setState('paused');
+      else if (state === 'paused') setState('playing');
+      break;
+  }
+});
+
+document.addEventListener('keyup', e => {
+  switch(e.code) {
+    case 'ArrowLeft': case 'KeyA': keys.left = false; break;
+    case 'ArrowRight': case 'KeyD': keys.right = false; break;
+  }
+});
+
+// D-pad
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+const fireBtn2 = document.getElementById('fireBtn');
+
+function addDpadButton(btn, key, isfire) {
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (isfire) {
+      if (state === 'playing') firePressed = true;
+    } else {
+      keys[key] = true;
+    }
+  });
+  btn.addEventListener('pointerup', e => {
+    e.preventDefault();
+    if (!isfire) keys[key] = false;
+  });
+  btn.addEventListener('pointerleave', e => {
+    if (!isfire) keys[key] = false;
+  });
+}
+
+addDpadButton(leftBtn, 'left', false);
+addDpadButton(rightBtn, 'right', false);
+addDpadButton(fireBtn2, null, true);
+
+// ─── Game loop ────────────────────────────────────────────────────────────────
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (!lastTime) lastTime = ts;
+  let dt = ts - lastTime;
+  lastTime = ts;
+  if (dt > 200) dt = 200;
+  acc += dt;
+  while (acc >= STEP) {
+    update();
+    if (state === 'playing' || state === 'dead' || state === 'levelcomplete') {
+      updateLevelDisplay();
+    }
+    acc -= STEP;
+  }
+  render();
+}
+
+// ─── Startup ──────────────────────────────────────────────────────────────────
+hiScore = parseInt(localStorage.getItem('ark_hiscore') || '0');
+document.getElementById('hiEl').textContent = String(hiScore).padStart(6, '0');
+document.getElementById('scoreEl').textContent = '000000';
+document.getElementById('levelEl').textContent = 'LV01';
+updateLivesDisplay();
+
+// Fetch leaderboard and show start screen
+fetchLeaderboard(5).then(() => {
+  setState('start');
+});
+// Fallback if fetch fails
+setTimeout(() => {
+  if (state !== 'start') setState('start');
+}, 1000);
+
+acc = 0;
+lastTime = 0;
+state = 'start';
+balls = [];
+bricks = [];
+powerups = [];
+lasers = [];
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
